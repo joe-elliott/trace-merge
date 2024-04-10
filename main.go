@@ -38,10 +38,12 @@ func main() {
 
 		// reset curNode to root each loop to re-overlay the next trace
 		curNode := &tree
+		// left/right is only valid w/i a trace, so reset it each loop
+		resetLeftRight(&tree)
 		for _, span := range ss.Spans {
 			// walk up the tree until we find a node that is a parent of this span
 			for curNode.parent != nil {
-				if curNode.parent.isChild(span) {
+				if curNode.isChild(span) {
 					break
 				}
 				curNode = curNode.parent
@@ -62,18 +64,6 @@ func main() {
 	}
 
 	dumpTree(&tree, 0)
-}
-
-func dumpTree(t *treeNode, depth int) {
-	for i := 0; i < depth; i++ {
-		fmt.Print("  ")
-	}
-
-	fmt.Println(t.name, len(t.spans))
-
-	for _, c := range t.children {
-		dumpTree(c, depth+1)
-	}
 }
 
 type treeNode struct {
@@ -113,6 +103,27 @@ func (t *treeNode) findMatchingChild(s *tempopb.Span) *treeNode {
 	}
 
 	return nil
+}
+
+func dumpTree(t *treeNode, depth int) {
+	for i := 0; i < depth; i++ {
+		fmt.Print("  ")
+	}
+
+	fmt.Println(t.name, len(t.spans))
+
+	for _, c := range t.children {
+		dumpTree(c, depth+1)
+	}
+}
+
+func resetLeftRight(t *treeNode) {
+	t.left = math.MaxInt64
+	t.right = math.MinInt64
+
+	for _, c := range t.children {
+		resetLeftRight(c)
+	}
 }
 
 func node(s *tempopb.Span) *treeNode {
